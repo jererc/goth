@@ -9,6 +9,7 @@ from playwright.sync_api import sync_playwright
 NAME = 'goth'
 
 logger = logging.getLogger(__name__)
+logging.getLogger('asyncio').setLevel(logging.INFO)
 
 
 class Autoauth:
