@@ -6,7 +6,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from playwright.sync_api import sync_playwright
 
 
-NAME = 'goth'
+# NAME = 'goth'
 
 logger = logging.getLogger(__name__)
 logging.getLogger('asyncio').setLevel(logging.INFO)
@@ -17,13 +17,15 @@ class Autoauth:
         self.client_secrets_file = client_secrets_file
         self.scopes = scopes
         self.headless = headless
-        self.work_path = os.path.join(os.path.expanduser('~'), f'.{NAME}')
+        self.state_file = self._get_state_file()
+
+    def _get_state_file(self):
+        dirname, basename = os.path.split(self.client_secrets_file)
+        name, ext = os.path.splitext(basename)
+        return os.path.join(dirname, f'{name}-state.json')
 
     @contextmanager
     def playwright_context(self):
-        if not os.path.exists(self.work_path):
-            os.makedirs(self.work_path)
-        state_path = os.path.join(self.work_path, 'state.json')
         with sync_playwright() as p:
             context = None
             try:
@@ -33,12 +35,12 @@ class Autoauth:
                         '--disable-blink-features=AutomationControlled',
                     ],
                 )
-                context = browser.new_context(storage_state=state_path
-                    if os.path.exists(state_path) else None)
+                context = browser.new_context(storage_state=self.state_file
+                    if os.path.exists(self.state_file) else None)
                 yield context
             finally:
                 if context:
-                    context.storage_state(path=state_path)
+                    context.storage_state(path=self.state_file)
                     context.close()
 
     def _click(self, page, selector, timeout=10000):
