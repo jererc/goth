@@ -3,7 +3,7 @@ import logging
 import os
 
 from google_auth_oauthlib.flow import InstalledAppFlow
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, TimeoutError
 
 
 logger = logging.getLogger(__name__)
@@ -41,26 +41,31 @@ class Autoauth:
                     context.storage_state(path=self.state_file)
                     context.close()
 
-    def _click(self, page, selector, timeout=10000):
-        page.wait_for_selector(selector, timeout=timeout).click()
+    def _click(self, page, selector, timeout=10000, raise_if_not_found=True):
+        try:
+            page.wait_for_selector(selector, timeout=timeout).click()
+        except TimeoutError:
+            if not raise_if_not_found:
+                logger.debug(f'{selector} not found')
+                return
+            raise
         logger.debug(f'clicked on {selector}')
 
-    def _interactive_workflow(self, page, timeout=120000):
-        # self._click(page,
-        #     'xpath=//div[@data-authuser="0"]')
-        self._click(page,
-            'xpath=//span[contains(text(), "Continue")]',
+    def _headful_worklow(self, page, timeout=120000):
+        self._click(page, 'xpath=//span[contains(text(), "Continue")]',
             timeout=timeout)
-        self._click(page,
-            'xpath=//input[@type="checkbox" and @aria-label="Select all"]')
-        self._click(page,
-            'xpath=//span[contains(text(), "Continue")]')
+        self._click(page, 'xpath=//input[@type="checkbox" '
+            'and @aria-label="Select all"]')
+        self._click(page, 'xpath=//span[contains(text(), "Continue")]')
 
-    def _headless_worklow(self, page):
-        self._click(page,
-            'xpath=//button[@id="choose-account-0"]')
-        self._click(page,
-            'xpath=//button[@id="submit_approve_access" and not(@disabled)]')
+    def _automated_worklow(self, page):
+        if self.headless:
+            self._click(page, 'xpath=//button[@id="choose-account-0"]')
+            self._click(page, 'xpath=//button[@id="submit_approve_access" '
+                'and not(@disabled)]')
+        else:
+            self._click(page, 'xpath=//div[@data-authuser="0"]', timeout=5000)
+            self._headful_worklow(page, timeout=10000)
 
     def _fetch_code(self, auth_url):
         with self.playwright_context() as context:
@@ -69,9 +74,9 @@ class Autoauth:
             if page.locator('xpath=//input[@type="email"]').count():
                 if self.headless:
                     raise Exception('requires interactive login')
-                self._interactive_workflow(page)
+                self._headful_worklow(page)
             else:
-                self._headless_worklow(page)
+                self._automated_worklow(page)
             textarea = page.wait_for_selector('xpath=//textarea', timeout=5000)
             return textarea.text_content()
 

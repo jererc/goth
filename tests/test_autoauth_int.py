@@ -34,7 +34,7 @@ class AutoauthTestCase(unittest.TestCase):
         creds_dict = json.loads(creds_json)
         self.assertTrue(creds_dict.get('token'))
 
-    def test_1(self):
+    def test_workflow(self):
         # Interactive workflow
         with patch('os.path.expanduser', return_value=WORK_DIR):
             ao = module.Autoauth(self.secrets_file,
