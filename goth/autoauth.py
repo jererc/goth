@@ -51,7 +51,7 @@ class Autoauth:
                 return
             if self.headless:
                 screenshot_file = os.path.join(os.path.dirname(
-                    self.state_file), f'error_{int(time.time())}.png')
+                    self.state_file), f'goth_{int(time.time())}.png')
                 page.screenshot(path=screenshot_file)
                 logger.warning(f'generated {screenshot_file=}')
             raise
