@@ -52,3 +52,27 @@ class AutoauthTestCase(unittest.TestCase):
             )
         res = ao.acquire_credentials()
         self._check_output(res)
+
+
+class DebugTestCase(unittest.TestCase):
+    def setUp(self):
+        if not os.path.exists(WORK_DIR):
+            os.makedirs(WORK_DIR)
+        self.secrets_file = os.path.join(WORK_DIR, 'secrets.json')
+        shutil.copy(SECRETS_FILE, self.secrets_file)
+
+    def _check_output(self, output):
+        self.assertTrue(output)
+        creds_json = output.to_json()
+        print(creds_json)
+        creds_dict = json.loads(creds_json)
+        self.assertTrue(creds_dict.get('token'))
+
+    def test_workflow(self):
+        with patch('os.path.expanduser', return_value=WORK_DIR):
+            ao = module.Autoauth(self.secrets_file,
+                scopes=SCOPES,
+                headless=True,
+            )
+        res = ao.acquire_credentials()
+        self._check_output(res)

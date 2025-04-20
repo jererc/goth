@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 import logging
 import os
+import time
 
 from google_auth_oauthlib.flow import InstalledAppFlow
 from playwright.sync_api import sync_playwright, TimeoutError
@@ -48,6 +49,11 @@ class Autoauth:
             if not raise_if_not_found:
                 logger.debug(f'{selector} not found')
                 return
+            if self.headless:
+                screenshot_file = os.path.join(os.path.dirname(
+                    self.state_file), f'error_{int(time.time())}.png')
+                page.screenshot(path=screenshot_file)
+                logger.warning(f'generated {screenshot_file=}')
             raise
         logger.debug(f'clicked on {selector}')
 
