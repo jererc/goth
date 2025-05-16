@@ -50,7 +50,7 @@ class Autoauth:
         with open(source_file, 'w', encoding='utf-8') as f:
             f.write(page.content())
         logger.warning(f'generated {source_file=}')
-        screenshot_file = os.path.join(debug_dir, f'{basename}.png')
+        screenshot_file = os.path.join(debug_dir, f'{filename}.png')
         page.screenshot(path=screenshot_file)
         logger.warning(f'generated {screenshot_file=}')
 
@@ -75,7 +75,11 @@ class Autoauth:
 
     def _automated_worklow(self, page):
         if self.headless:
-            self._click(page, 'xpath=//button[@id="choose-account-0"]')
+            try:
+                self._click(page, 'xpath=//button[@id="choose-account-0"]', timeout=5000)
+            except TimeoutError:
+                logger.warning('falling back to alternate account selector')
+                self._click(page, 'xpath=//div[@data-button-type and @data-item-index="0"]/button', timeout=5000)
             self._click(page, 'xpath=//button[@id="submit_approve_access" '
                 'and not(@disabled)]')
         else:

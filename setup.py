@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='goth',
-    version='2025.05.16.120520',
+    version='2025.05.16.121704',
     author='jererc',
     author_email='jererc@gmail.com',
     url='https://github.com/jererc/goth',
