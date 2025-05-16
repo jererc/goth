@@ -54,14 +54,15 @@ class Autoauth:
         page.screenshot(path=screenshot_file)
         logger.warning(f'generated {screenshot_file=}')
 
-    def _click(self, page, selector, timeout=10000, raise_if_not_found=True):
+    def _click(self, page, selector, timeout=10000, raise_if_not_found=True,
+               debug=True):
         try:
             page.wait_for_selector(selector, timeout=timeout).click()
         except TimeoutError:
             if not raise_if_not_found:
                 logger.debug(f'{selector} not found')
                 return
-            if self.headless:
+            if self.headless and debug:
                 self._save_debug_data(page)
             raise
         logger.debug(f'clicked on {selector}')
@@ -76,10 +77,12 @@ class Autoauth:
     def _automated_worklow(self, page):
         if self.headless:
             try:
-                self._click(page, 'xpath=//button[@id="choose-account-0"]', timeout=5000)
+                self._click(page, 'xpath=//button[@id="choose-account-0"]',
+                            timeout=5000, debug=False)
             except TimeoutError:
                 logger.warning('falling back to alternate account selector')
-                self._click(page, 'xpath=//div[@data-button-type and @data-item-index="0"]/button', timeout=5000)
+                self._click(page, 'xpath=//div[@data-button-type and @data-item-index="0"]/button',
+                            timeout=5000)
             self._click(page, 'xpath=//button[@id="submit_approve_access" '
                 'and not(@disabled)]')
         else:
