@@ -50,7 +50,7 @@ class Autoauth:
         with open(source_file, 'w', encoding='utf-8') as f:
             f.write(page.content())
         logger.warning(f'generated {source_file=}')
-        screenshot_file = os.path.join(debug_dir, f'{filename}.png')
+        screenshot_file = os.path.join(debug_dir, f'{basename}.png')
         page.screenshot(path=screenshot_file)
         logger.warning(f'generated {screenshot_file=}')
 
