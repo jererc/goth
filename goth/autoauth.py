@@ -42,6 +42,18 @@ class Autoauth:
                     context.storage_state(path=self.state_file)
                     context.close()
 
+    def _save_debug_data(self, page):
+        debug_dir = os.path.join(os.path.dirname(self.state_file), 'debug')
+        os.makedirs(debug_dir, exist_ok=True)
+        basename = int(time.time())
+        source_file = os.path.join(debug_dir, f'{basename}.html')
+        with open(source_file, 'w', encoding='utf-8') as f:
+            f.write(page.content())
+        logger.warning(f'generated {source_file=}')
+        screenshot_file = os.path.join(debug_dir, f'{basename}.png')
+        page.screenshot(path=screenshot_file)
+        logger.warning(f'generated {screenshot_file=}')
+
     def _click(self, page, selector, timeout=10000, raise_if_not_found=True):
         try:
             page.wait_for_selector(selector, timeout=timeout).click()
@@ -50,10 +62,7 @@ class Autoauth:
                 logger.debug(f'{selector} not found')
                 return
             if self.headless:
-                screenshot_file = os.path.join(os.path.dirname(
-                    self.state_file), f'goth_{int(time.time())}.png')
-                page.screenshot(path=screenshot_file)
-                logger.warning(f'generated {screenshot_file=}')
+                self._save_debug_data(page)
             raise
         logger.debug(f'clicked on {selector}')
 
