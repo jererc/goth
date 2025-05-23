@@ -22,8 +22,7 @@ class AutoauthTestCase(unittest.TestCase):
     def setUp(self):
         # if os.path.exists(WORK_DIR):
         #     shutil.rmtree(WORK_DIR)
-        if not os.path.exists(WORK_DIR):
-            os.makedirs(WORK_DIR)
+        os.makedirs(WORK_DIR, exist_ok=True)
         self.secrets_file = os.path.join(WORK_DIR, 'secrets.json')
         shutil.copy(SECRETS_FILE, self.secrets_file)
 
@@ -56,8 +55,7 @@ class AutoauthTestCase(unittest.TestCase):
 
 class DebugTestCase(unittest.TestCase):
     def setUp(self):
-        if not os.path.exists(WORK_DIR):
-            os.makedirs(WORK_DIR)
+        os.makedirs(WORK_DIR, exist_ok=True)
         self.secrets_file = os.path.join(WORK_DIR, 'secrets.json')
         shutil.copy(SECRETS_FILE, self.secrets_file)
 
