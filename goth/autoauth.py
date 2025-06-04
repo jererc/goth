@@ -35,7 +35,7 @@ class Autoauth:
                     ],
                 )
                 context = browser.new_context(storage_state=self.state_file
-                    if os.path.exists(self.state_file) else None)
+                                              if os.path.exists(self.state_file) else None)
                 yield context
             finally:
                 if context:
@@ -69,9 +69,9 @@ class Autoauth:
 
     def _headful_worklow(self, page, timeout=120000):
         self._click(page, 'xpath=//span[contains(text(), "Continue")]',
-            timeout=timeout)
+                    timeout=timeout)
         self._click(page, 'xpath=//input[@type="checkbox" '
-            'and @aria-label="Select all"]')
+                    'and @aria-label="Select all"]')
         self._click(page, 'xpath=//span[contains(text(), "Continue")]')
 
     def _automated_worklow(self, page):
@@ -84,7 +84,7 @@ class Autoauth:
                 self._click(page, 'xpath=//div[@data-button-type and @data-item-index="0"]/button',
                             timeout=5000)
             self._click(page, 'xpath=//button[@id="submit_approve_access" '
-                'and not(@disabled)]')
+                        'and not(@disabled)]')
         else:
             self._click(page, 'xpath=//div[@data-authuser="0"]', timeout=5000)
             self._headful_worklow(page, timeout=10000)
