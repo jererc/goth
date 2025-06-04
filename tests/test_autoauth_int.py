@@ -36,19 +36,13 @@ class AutoauthTestCase(unittest.TestCase):
     def test_workflow(self):
         # Interactive workflow
         with patch('os.path.expanduser', return_value=WORK_DIR):
-            ao = module.Autoauth(self.secrets_file,
-                scopes=SCOPES,
-                headless=False,
-            )
+            ao = module.Autoauth(self.secrets_file, scopes=SCOPES, headless=False)
         res = ao.acquire_credentials()
         self._check_output(res)
 
         # Headless workflow
         with patch('os.path.expanduser', return_value=WORK_DIR):
-            ao = module.Autoauth(self.secrets_file,
-                scopes=SCOPES,
-                headless=True,
-            )
+            ao = module.Autoauth(self.secrets_file, scopes=SCOPES, headless=True)
         res = ao.acquire_credentials()
         self._check_output(res)
 
@@ -68,9 +62,6 @@ class DebugTestCase(unittest.TestCase):
 
     def test_workflow(self):
         with patch('os.path.expanduser', return_value=WORK_DIR):
-            ao = module.Autoauth(self.secrets_file,
-                scopes=SCOPES,
-                headless=True,
-            )
+            ao = module.Autoauth(self.secrets_file, scopes=SCOPES, headless=True)
         res = ao.acquire_credentials()
         self._check_output(res)
