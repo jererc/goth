@@ -20,8 +20,7 @@ class Autoauth:
 
     def _get_state_file(self):
         dirname, basename = os.path.split(self.client_secrets_file)
-        name, ext = os.path.splitext(basename)
-        return os.path.join(dirname, f'{name}-state.json')
+        return os.path.join(dirname, f'{os.path.splitext(basename)[0]}-state.json')
 
     @contextmanager
     def playwright_context(self):
@@ -50,19 +49,19 @@ class Autoauth:
         with open(source_file, 'w', encoding='utf-8') as f:
             f.write(page.content())
         logger.warning(f'generated {source_file=}')
-        screenshot_file = os.path.join(debug_dir, f'{basename}.png')
-        page.screenshot(path=screenshot_file)
-        logger.warning(f'generated {screenshot_file=}')
+        # screenshot_file = os.path.join(debug_dir, f'{basename}.png')
+        # page.screenshot(path=screenshot_file)
+        # logger.warning(f'generated {screenshot_file=}')
 
     def _click(self, page, selector, timeout=10000, raise_if_not_found=True,
                debug=True):
         try:
             page.wait_for_selector(selector, timeout=timeout).click()
         except TimeoutError:
+            logger.debug(f'{selector} not found')
             if not raise_if_not_found:
-                logger.debug(f'{selector} not found')
                 return
-            if self.headless and debug:
+            if debug:
                 self._save_debug_data(page)
             raise
         logger.debug(f'clicked on {selector}')
@@ -70,8 +69,11 @@ class Autoauth:
     def _headful_worklow(self, page, timeout=120000):
         self._click(page, 'xpath=//span[contains(text(), "Continue")]',
                     timeout=timeout)
-        self._click(page, 'xpath=//input[@type="checkbox" '
-                    'and @aria-label="Select all"]')
+        try:
+            self._click(page, 'xpath=//input[@type="checkbox" and @aria-label="Select all"]',
+                        debug=False)
+        except TimeoutError:
+            logger.warning('no checkbox found, access probably already granted')
         self._click(page, 'xpath=//span[contains(text(), "Continue")]')
 
     def _automated_worklow(self, page):
@@ -83,8 +85,7 @@ class Autoauth:
                 logger.warning('falling back to alternate account selector')
                 self._click(page, 'xpath=//div[@data-button-type and @data-item-index="0"]/button',
                             timeout=5000)
-            self._click(page, 'xpath=//button[@id="submit_approve_access" '
-                        'and not(@disabled)]')
+            self._click(page, 'xpath=//button[@id="submit_approve_access" and not(@disabled)]')
         else:
             self._click(page, 'xpath=//div[@data-authuser="0"]', timeout=5000)
             self._headful_worklow(page, timeout=10000)

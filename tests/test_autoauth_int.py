@@ -8,14 +8,14 @@ from unittest.mock import patch
 from goth import autoauth as module
 
 
-WORK_DIR = os.path.join(os.path.expanduser('~'), '_tests', 'goth')
+WORK_DIR = os.path.expanduser('~/tmp/tests/goth')
 SECRETS_FILE = os.path.join(os.path.expanduser('~'), 'gcs-savegame.json')
 SCOPES = [
     'https://www.googleapis.com/auth/contacts.readonly',
     'https://www.googleapis.com/auth/drive.readonly',
 ]
 
-module.logger.setLevel(logging.DEBUG)
+logging.getLogger('').setLevel(logging.DEBUG)
 
 
 class AutoauthTestCase(unittest.TestCase):
