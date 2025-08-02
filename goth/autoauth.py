@@ -7,6 +7,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from playwright.sync_api import sync_playwright, TimeoutError
 from svcutils.notifier import notify
 
+from goth import NAME, WORK_DIR
+
 
 CHALLENGE_TIMEOUT = 60   # seconds
 
@@ -81,11 +83,12 @@ class Autoauth:
     def _handle_challenge(self, page):
         res = page.wait_for_selector('xpath=//samp', timeout=5000)
         challenge = res.text_content()
-        if not (challenge and challenge.isdigit()):
+        if not challenge:
             self._save_debug_data(page)
             raise Exception('invalid challenge')
         logger.info(f'{challenge=}')
-        notify(title='challenge', body=challenge, app_name='goth')
+        notify(title='challenge', body=challenge, app_name=NAME,
+               replace_key='challenge', work_dir=WORK_DIR)
         time.sleep(CHALLENGE_TIMEOUT)
 
     def _automated_worklow(self, page):

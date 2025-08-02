@@ -5,11 +5,11 @@ import shutil
 import unittest
 from unittest.mock import patch
 
+from tests import WORK_DIR
 from goth import autoauth as module
 
 
-WORK_DIR = os.path.expanduser('~/tmp/tests/goth')
-SECRETS_FILE = os.path.join(os.path.expanduser('~'), 'gcs-savegame.json')
+SECRETS_FILE = os.path.expanduser('~/gcs-savegame.json')
 SCOPES = [
     'https://www.googleapis.com/auth/contacts.readonly',
     'https://www.googleapis.com/auth/drive.readonly',
