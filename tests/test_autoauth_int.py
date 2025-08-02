@@ -15,8 +15,6 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive.readonly',
 ]
 
-logging.getLogger('').setLevel(logging.DEBUG)
-
 
 class AutoauthTestCase(unittest.TestCase):
     def setUp(self):
