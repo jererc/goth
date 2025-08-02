@@ -5,7 +5,10 @@ import time
 
 from google_auth_oauthlib.flow import InstalledAppFlow
 from playwright.sync_api import sync_playwright, TimeoutError
+from svcutils.notifier import notify
 
+
+CHALLENGE_TIMEOUT = 60   # seconds
 
 logger = logging.getLogger(__name__)
 logging.getLogger('asyncio').setLevel(logging.INFO)
@@ -53,8 +56,7 @@ class Autoauth:
         # page.screenshot(path=screenshot_file)
         # logger.warning(f'generated {screenshot_file=}')
 
-    def _click(self, page, selector, timeout=10000, raise_if_not_found=True,
-               debug=True):
+    def _click(self, page, selector, timeout=10000, raise_if_not_found=True, debug=True):
         try:
             page.wait_for_selector(selector, timeout=timeout).click()
         except TimeoutError:
@@ -76,6 +78,16 @@ class Autoauth:
             logger.warning('no checkbox found, access probably already granted')
         self._click(page, 'xpath=//span[contains(text(), "Continue")]')
 
+    def _handle_challenge(self, page):
+        res = page.wait_for_selector('xpath=//samp', timeout=5000)
+        challenge = res.text_content()
+        if not (challenge and challenge.isdigit()):
+            self._save_debug_data(page)
+            raise Exception('invalid challenge')
+        logger.info(f'{challenge=}')
+        notify(title='challenge', body=challenge, app_name='goth')
+        time.sleep(CHALLENGE_TIMEOUT)
+
     def _automated_worklow(self, page):
         if self.headless:
             try:
@@ -85,7 +97,13 @@ class Autoauth:
                 logger.warning('falling back to alternate account selector')
                 self._click(page, 'xpath=//div[@data-button-type and @data-item-index="0"]/button',
                             timeout=5000)
-            self._click(page, 'xpath=//button[@id="submit_approve_access" and not(@disabled)]')
+            try:
+                self._click(page, 'xpath=//button[@id="submit_approve_access" and not(@disabled)]',
+                            timeout=5000, debug=False)
+            except TimeoutError:
+                self._handle_challenge(page)
+                self._click(page, 'xpath=//button[@id="submit_approve_access" and not(@disabled)]',
+                            timeout=5000)
         else:
             self._click(page, 'xpath=//div[@data-authuser="0"]', timeout=5000)
             self._headful_worklow(page, timeout=10000)
