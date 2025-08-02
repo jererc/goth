@@ -10,17 +10,16 @@ from svcutils.notifier import notify
 from goth import NAME, WORK_DIR
 
 
-CHALLENGE_TIMEOUT = 60   # seconds
-
 logger = logging.getLogger(__name__)
 logging.getLogger('asyncio').setLevel(logging.INFO)
 
 
 class Autoauth:
-    def __init__(self, client_secrets_file, scopes, headless=True):
+    def __init__(self, client_secrets_file, scopes, headless=True, challenge_timeout=120):
         self.client_secrets_file = client_secrets_file
         self.scopes = scopes
         self.headless = headless
+        self.challenge_timeout = challenge_timeout
         self.state_file = self._get_state_file()
 
     def _get_state_file(self):
@@ -46,17 +45,17 @@ class Autoauth:
                     context.storage_state(path=self.state_file)
                     context.close()
 
-    def _save_debug_data(self, page):
-        debug_dir = os.path.join(os.path.dirname(self.state_file), 'debug')
+    def _save_debug_data(self, page, name):
+        debug_dir = os.path.join(WORK_DIR, 'debug')
         os.makedirs(debug_dir, exist_ok=True)
-        basename = int(time.time())
+        basename = f'{int(time.time())}-{name}'
         source_file = os.path.join(debug_dir, f'{basename}.html')
         with open(source_file, 'w', encoding='utf-8') as f:
             f.write(page.content())
-        logger.warning(f'generated {source_file=}')
+        logger.warning(f'saved page content to {source_file}')
         # screenshot_file = os.path.join(debug_dir, f'{basename}.png')
         # page.screenshot(path=screenshot_file)
-        # logger.warning(f'generated {screenshot_file=}')
+        # logger.warning(f'saved page screenshot to {screenshot_file}')
 
     def _click(self, page, selector, timeout=10000, raise_if_not_found=True, debug=True):
         try:
@@ -66,7 +65,7 @@ class Autoauth:
             if not raise_if_not_found:
                 return
             if debug:
-                self._save_debug_data(page)
+                self._save_debug_data(page, 'click_failed')
             raise
         logger.debug(f'clicked on {selector}')
 
@@ -84,12 +83,13 @@ class Autoauth:
         res = page.wait_for_selector('xpath=//samp', timeout=5000)
         challenge = res.text_content()
         if not challenge:
-            self._save_debug_data(page)
-            raise Exception('invalid challenge')
+            self._save_debug_data(page, 'challenge_not_found')
+            raise Exception('challenge not found')
         logger.info(f'{challenge=}')
         notify(title='challenge', body=challenge, app_name=NAME,
                replace_key='challenge', work_dir=WORK_DIR)
-        time.sleep(CHALLENGE_TIMEOUT)
+        time.sleep(self.challenge_timeout)
+        self._save_debug_data(page, 'challenge_solved')
 
     def _automated_worklow(self, page):
         if self.headless:
