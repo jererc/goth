@@ -1,6 +1,6 @@
 import json
-import logging
 import os
+from pprint import pprint
 import shutil
 import unittest
 from unittest.mock import patch
@@ -27,23 +27,37 @@ class BaseAutoauthTestCase(unittest.TestCase):
 
     def _check_output(self, output):
         self.assertTrue(output)
-        creds_json = output.to_json()
-        print(creds_json)
-        creds_dict = json.loads(creds_json)
+        creds_dict = json.loads(output.to_json())
+        pprint(creds_dict)
         self.assertTrue(creds_dict.get('token'))
+        self.assertEqual(sorted(creds_dict['scopes']), sorted(SCOPES))
+
+
+class LoginTestCase(BaseAutoauthTestCase):
+    def setUp(self):
+        super().setUp()
+        self.state_file = os.path.join(WORK_DIR, 'test-state.json')
+        if os.path.exists(self.state_file):
+            os.remove(self.state_file)
+
+    def test_workflow(self):
+        with patch.object(module.Autoauth, '_get_state_file',
+                          return_value=self.state_file):
+            ao = module.Autoauth(self.secrets_file, scopes=SCOPES, headless=False)
+        res = ao.acquire_credentials()
+        self._check_output(res)
+        self.assertTrue(os.path.exists(self.state_file))
 
 
 class HeadfulTestCase(BaseAutoauthTestCase):
     def test_workflow(self):
-        with patch('os.path.expanduser', return_value=WORK_DIR):
-            ao = module.Autoauth(self.secrets_file, scopes=SCOPES, headless=False)
+        ao = module.Autoauth(self.secrets_file, scopes=SCOPES, headless=False)
         res = ao.acquire_credentials()
         self._check_output(res)
 
 
 class HeadlessTestCase(BaseAutoauthTestCase):
     def test_workflow(self):
-        with patch('os.path.expanduser', return_value=WORK_DIR):
-            ao = module.Autoauth(self.secrets_file, scopes=SCOPES, headless=True)
+        ao = module.Autoauth(self.secrets_file, scopes=SCOPES, headless=True)
         res = ao.acquire_credentials()
         self._check_output(res)

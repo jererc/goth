@@ -15,11 +15,10 @@ logging.getLogger('asyncio').setLevel(logging.INFO)
 
 
 class Autoauth:
-    def __init__(self, client_secrets_file, scopes, headless=True, challenge_timeout=120):
+    def __init__(self, client_secrets_file, scopes, headless=True):
         self.client_secrets_file = client_secrets_file
         self.scopes = scopes
         self.headless = headless
-        self.challenge_timeout = challenge_timeout
         self.state_file = self._get_state_file()
 
     def _get_state_file(self):
@@ -58,11 +57,11 @@ class Autoauth:
             page.screenshot(path=screenshot_file)
             logger.warning(f'saved page screenshot to {screenshot_file}')
 
-    def _click(self, page, selector, timeout=10000, click_delay=0.5,
+    def _click(self, page, selector, timeout=10000, click_delay=500,
                raise_if_not_found=True, debug=True):
         try:
             res = page.wait_for_selector(selector, timeout=timeout)
-            time.sleep(click_delay)
+            time.sleep(click_delay / 1000)
             res.click()
         except TimeoutError:
             logger.debug(f'{selector} not found')
@@ -78,7 +77,7 @@ class Autoauth:
                     timeout=timeout)
         try:
             self._click(page, 'xpath=(//input[@type="checkbox"])[1]',
-                        click_delay=1, debug=False)
+                        click_delay=1000, debug=False)
         except TimeoutError:
             logger.warning('no checkbox found, access probably already granted')
         self._click(page, 'xpath=//span[contains(text(), "Continue")]')
@@ -107,7 +106,7 @@ class Autoauth:
                 logger.info(f'{challenge_value=}')
                 notify(title='challenge', body=challenge_value, app_name=NAME,
                        replace_key='challenge', work_dir=WORK_DIR)
-                time.sleep(self.challenge_timeout)
+                time.sleep(60)
                 self._save_debug_data(page, 'challenge_solved')
             finally:
                 # No need to select permissions
