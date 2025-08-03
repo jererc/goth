@@ -16,10 +16,11 @@ SCOPES = [
 ]
 
 
-class AutoauthTestCase(unittest.TestCase):
+class BaseAutoauthTestCase(unittest.TestCase):
+    """
+    https://myaccount.google.com/connections
+    """
     def setUp(self):
-        # if os.path.exists(WORK_DIR):
-        #     shutil.rmtree(WORK_DIR)
         os.makedirs(WORK_DIR, exist_ok=True)
         self.secrets_file = os.path.join(WORK_DIR, 'secrets.json')
         shutil.copy(SECRETS_FILE, self.secrets_file)
@@ -31,33 +32,16 @@ class AutoauthTestCase(unittest.TestCase):
         creds_dict = json.loads(creds_json)
         self.assertTrue(creds_dict.get('token'))
 
+
+class HeadfulTestCase(BaseAutoauthTestCase):
     def test_workflow(self):
-        # Interactive workflow
         with patch('os.path.expanduser', return_value=WORK_DIR):
             ao = module.Autoauth(self.secrets_file, scopes=SCOPES, headless=False)
         res = ao.acquire_credentials()
         self._check_output(res)
 
-        # Headless workflow
-        with patch('os.path.expanduser', return_value=WORK_DIR):
-            ao = module.Autoauth(self.secrets_file, scopes=SCOPES, headless=True)
-        res = ao.acquire_credentials()
-        self._check_output(res)
 
-
-class DebugTestCase(unittest.TestCase):
-    def setUp(self):
-        os.makedirs(WORK_DIR, exist_ok=True)
-        self.secrets_file = os.path.join(WORK_DIR, 'secrets.json')
-        shutil.copy(SECRETS_FILE, self.secrets_file)
-
-    def _check_output(self, output):
-        self.assertTrue(output)
-        creds_json = output.to_json()
-        print(creds_json)
-        creds_dict = json.loads(creds_json)
-        self.assertTrue(creds_dict.get('token'))
-
+class HeadlessTestCase(BaseAutoauthTestCase):
     def test_workflow(self):
         with patch('os.path.expanduser', return_value=WORK_DIR):
             ao = module.Autoauth(self.secrets_file, scopes=SCOPES, headless=True)

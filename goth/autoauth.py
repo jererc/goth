@@ -53,13 +53,17 @@ class Autoauth:
         with open(source_file, 'w', encoding='utf-8') as f:
             f.write(page.content())
         logger.warning(f'saved page content to {source_file}')
-        # screenshot_file = os.path.join(debug_dir, f'{basename}.png')
-        # page.screenshot(path=screenshot_file)
-        # logger.warning(f'saved page screenshot to {screenshot_file}')
+        if self.headless:
+            screenshot_file = os.path.join(debug_dir, f'{basename}.png')
+            page.screenshot(path=screenshot_file)
+            logger.warning(f'saved page screenshot to {screenshot_file}')
 
-    def _click(self, page, selector, timeout=10000, raise_if_not_found=True, debug=True):
+    def _click(self, page, selector, timeout=10000, click_delay=0.5,
+               raise_if_not_found=True, debug=True):
         try:
-            page.wait_for_selector(selector, timeout=timeout).click()
+            res = page.wait_for_selector(selector, timeout=timeout)
+            time.sleep(click_delay)
+            res.click()
         except TimeoutError:
             logger.debug(f'{selector} not found')
             if not raise_if_not_found:
@@ -69,47 +73,46 @@ class Autoauth:
             raise
         logger.debug(f'clicked on {selector}')
 
-    def _headful_worklow(self, page, timeout=120000):
+    def _grant_access(self, page, timeout=10000):
         self._click(page, 'xpath=//span[contains(text(), "Continue")]',
                     timeout=timeout)
         try:
-            self._click(page, 'xpath=//input[@type="checkbox" and @aria-label="Select all"]',
-                        debug=False)
+            self._click(page, 'xpath=(//input[@type="checkbox"])[1]',
+                        click_delay=1, debug=False)
         except TimeoutError:
             logger.warning('no checkbox found, access probably already granted')
         self._click(page, 'xpath=//span[contains(text(), "Continue")]')
 
-    def _handle_challenge(self, page):
-        res = page.wait_for_selector('xpath=//samp', timeout=5000)
-        challenge = res.text_content()
-        if not challenge:
-            self._save_debug_data(page, 'challenge_not_found')
-            raise Exception('challenge not found')
-        logger.info(f'{challenge=}')
-        notify(title='challenge', body=challenge, app_name=NAME,
-               replace_key='challenge', work_dir=WORK_DIR)
-        time.sleep(self.challenge_timeout)
-        self._save_debug_data(page, 'challenge_solved')
-
     def _automated_worklow(self, page):
-        if self.headless:
+        if not self.headless:
+            self._click(page, 'xpath=//div[@data-authuser="0"]', timeout=5000)
+            self._grant_access(page, timeout=10000)
+        else:
             try:
-                self._click(page, 'xpath=//button[@id="choose-account-0"]',
-                            timeout=5000, debug=False)
-            except TimeoutError:
-                logger.warning('falling back to alternate account selector')
                 self._click(page, 'xpath=//div[@data-button-type and @data-item-index="0"]/button',
                             timeout=5000)
+            except TimeoutError:
+                logger.warning('falling back to alternate account selector')
+                self._click(page, 'xpath=//button[@id="choose-account-0"]',
+                            timeout=5000)
             try:
+                challenge = page.wait_for_selector('xpath=//samp', timeout=5000)
+            except TimeoutError:
+                pass
+            else:
+                challenge_value = challenge.text_content()
+                if not challenge_value:
+                    self._save_debug_data(page, 'challenge_not_found')
+                    raise Exception('challenge not found')
+                logger.info(f'{challenge_value=}')
+                notify(title='challenge', body=challenge_value, app_name=NAME,
+                       replace_key='challenge', work_dir=WORK_DIR)
+                time.sleep(self.challenge_timeout)
+                self._save_debug_data(page, 'challenge_solved')
+            finally:
+                # No need to select permissions
                 self._click(page, 'xpath=//button[@id="submit_approve_access" and not(@disabled)]',
                             timeout=5000, debug=False)
-            except TimeoutError:
-                self._handle_challenge(page)
-                self._click(page, 'xpath=//button[@id="submit_approve_access" and not(@disabled)]',
-                            timeout=5000)
-        else:
-            self._click(page, 'xpath=//div[@data-authuser="0"]', timeout=5000)
-            self._headful_worklow(page, timeout=10000)
 
     def _fetch_code(self, auth_url):
         with self.playwright_context() as context:
@@ -118,10 +121,15 @@ class Autoauth:
             if page.locator('xpath=//input[@type="email"]').count():
                 if self.headless:
                     raise Exception('requires interactive login')
-                self._headful_worklow(page)
+                logger.debug('waiting for user to login...')
+                self._grant_access(page, timeout=120000)
             else:
                 self._automated_worklow(page)
-            textarea = page.wait_for_selector('xpath=//textarea', timeout=5000)
+            try:
+                textarea = page.wait_for_selector('xpath=//textarea', timeout=5000)
+            except TimeoutError:
+                self._save_debug_data(page, 'code_not_found')
+                raise
             return textarea.text_content()
 
     def acquire_credentials(self):
