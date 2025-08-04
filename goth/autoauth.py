@@ -72,17 +72,19 @@ class Autoauth:
             raise
         logger.debug(f'clicked on {selector}')
 
+    def _continue(self, page, timeout=5000):
+        self._click(page, 'xpath=//span[contains(text(), "Continue")]', timeout=timeout)
+
     def _auth(self, page):
         if page.locator('xpath=//input[@type="email"]').count():
             if self.headless:
                 raise Exception('requires interactive login')
             logger.debug('waiting for user to login...')
-            self._click(page, 'xpath=//span[contains(text(), "Continue")]', timeout=120000)
-        elif not self.headless:
-            self._click(page, 'xpath=//div[@data-authuser="0"]', timeout=5000)
-            self._click(page, 'xpath=//span[contains(text(), "Continue")]', timeout=5000)
-        else:
-            self._click(page, 'xpath=//div[@data-button-type and @data-item-index="0"]/button', timeout=5000)
+            self._continue(page, timeout=120000)
+            return
+
+        if self.headless:
+            self._click(page, 'xpath=(//div[@data-button-type])[1]/button', timeout=5000)
             try:
                 challenge = page.wait_for_selector('xpath=//samp', timeout=5000)
             except TimeoutError:
@@ -97,17 +99,20 @@ class Autoauth:
                        replace_key='challenge', work_dir=WORK_DIR)
                 time.sleep(60)
                 self._save_debug_data(page, 'challenge_solved')
+        else:
+            self._click(page, 'xpath=(//div[@data-authuser])[1]', timeout=5000)
+            self._continue(page, timeout=5000)
 
     def _grant(self, page):
         if self.headless:
             # No need to select permissions
-            self._click(page, 'xpath=//button[@id="submit_approve_access" and not(@disabled)]', timeout=5000, debug=False)
+            self._click(page, 'xpath=//button[@id="submit_approve_access" and not(@disabled)]', timeout=5000)
         else:
             try:
                 self._click(page, 'xpath=(//input[@type="checkbox"])[1]', click_delay=1000, debug=False)
             except TimeoutError:
                 logger.warning('access probably already granted')
-            self._click(page, 'xpath=//span[contains(text(), "Continue")]')
+            self._continue(page, timeout=10000)
 
     def _fetch_code(self, auth_url):
         with self.playwright_context() as context:
