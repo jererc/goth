@@ -5,7 +5,7 @@ import time
 
 from google_auth_oauthlib.flow import InstalledAppFlow
 from playwright.sync_api import sync_playwright, TimeoutError
-from svcutils.notifier import notify
+from svcutils.notifier import notify, clear_notif
 
 from goth import NAME, WORK_DIR
 
@@ -95,9 +95,9 @@ class Autoauth:
                     self._save_debug_data(page, 'challenge_not_found')
                     raise Exception('challenge not found')
                 logger.info(f'{challenge_value=}')
-                notify(title='challenge', body=challenge_value, app_name=NAME,
-                       replace_key='challenge', work_dir=WORK_DIR)
+                notify(title='challenge', body=challenge_value, app_name=NAME, replace_key='challenge')
                 time.sleep(60)
+                clear_notif(app_name=NAME, replace_key='challenge')
                 self._save_debug_data(page, 'challenge_solved')
         else:
             self._click(page, 'xpath=(//div[@data-authuser])[1]', timeout=5000)
