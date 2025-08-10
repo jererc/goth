@@ -3,7 +3,6 @@ import os
 from pprint import pprint
 import shutil
 import unittest
-from unittest.mock import patch
 
 from tests import WORK_DIR
 from goth import autoauth as module
@@ -41,9 +40,8 @@ class LoginTestCase(BaseAutoauthTestCase):
             os.remove(self.state_file)
 
     def test_workflow(self):
-        with patch.object(module.Autoauth, '_get_state_file',
-                          return_value=self.state_file):
-            ao = module.Autoauth(self.secrets_file, scopes=SCOPES, headless=False)
+        ao = module.Autoauth(self.secrets_file, scopes=SCOPES, headless=False)
+        ao.state.file = self.state_file
         res = ao.acquire_credentials()
         self._check_output(res)
         self.assertTrue(os.path.exists(self.state_file))
