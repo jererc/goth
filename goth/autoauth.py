@@ -6,8 +6,6 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from playwright.sync_api import TimeoutError
 from webutils.browser import State, playwright_context, save_page
 
-from goth import WORK_DIR
-
 
 logger = logging.getLogger(__name__)
 logging.getLogger('asyncio').setLevel(logging.INFO)
@@ -19,9 +17,10 @@ class Autoauth:
         self.scopes = scopes
         self.headless = headless
         self.state = State(f'{os.path.splitext(self.client_secrets_file)[0]}-state.json')
+        self.debug_dir = os.path.join(os.path.dirname(self.client_secrets_file), 'debug')
 
     def _save_page(self, page, name):
-        save_page(page, os.path.join(WORK_DIR, 'debug'), name)
+        save_page(page, self.debug_dir, name)
 
     def _click(self, page, selector, timeout=10000, click_delay=500,
                raise_if_not_found=True, debug=True):
