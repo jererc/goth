@@ -4,7 +4,7 @@ import time
 
 from google_auth_oauthlib.flow import InstalledAppFlow
 from playwright.sync_api import TimeoutError
-from webutils.browser import State, playwright_context, save_page
+from webutils.browser import playwright_context, save_page
 
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ class Autoauth:
         self.client_secrets_file = client_secrets_file
         self.scopes = scopes
         self.headless = headless
-        self.state = State(f'{os.path.splitext(self.client_secrets_file)[0]}-state.json')
+        self.state_file = f'{os.path.splitext(self.client_secrets_file)[0]}-state.json'
         self.debug_dir = os.path.join(os.path.dirname(self.client_secrets_file), 'debug')
 
     def _save_page(self, page, name):
@@ -56,7 +56,7 @@ class Autoauth:
         self._continue(page, timeout=10000)
 
     def _fetch_code(self, auth_url):
-        with playwright_context(self.state, self.headless, stealth=self.headless) as context:
+        with playwright_context(self.state_file, self.headless, stealth=self.headless) as context:
             page = context.new_page()
             page.goto(auth_url)
             self._grant_permissions(page)
