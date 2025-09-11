@@ -7,7 +7,6 @@ import unittest
 from tests import WORK_DIR
 from goth import autoauth as module
 
-
 SECRETS_FILE = os.path.expanduser('~/gcs-savegame.json')
 SCOPES = [
     'https://www.googleapis.com/auth/contacts.readonly',

@@ -6,7 +6,6 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from playwright.sync_api import TimeoutError
 from webutils.browser import playwright_context, save_page
 
-
 logger = logging.getLogger(__name__)
 logging.getLogger('asyncio').setLevel(logging.INFO)
 
