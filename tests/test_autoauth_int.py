@@ -40,7 +40,7 @@ class LoginTestCase(BaseAutoauthTestCase):
 
     def test_workflow(self):
         ao = module.Autoauth(self.secrets_file, scopes=SCOPES, headless=False)
-        ao.state.file = self.state_file
+        ao.state_file = self.state_file
         res = ao.acquire_credentials()
         self._check_output(res)
         self.assertTrue(os.path.exists(self.state_file))
